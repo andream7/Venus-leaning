@@ -631,12 +631,13 @@ make all
 
    ```
    ./venus-sector-manager util sealer proving --miner 4682 deadlines
+   ./venus-worker worker -c venus-worker.toml list
    ```
 
 5. 运行
 
    ```
-   nohup ./dist/bin/venus-sector-manager daemon  run  --poster --miner --listen 0.0.0.0:1789 --ext-prover >venus-sector-manager.log 2>&1 &
+   nohup ./dist/bin/venus-sector-manager daemon run --poster --miner --listen 0.0.0.0:1789 --ext-prover >venus-sector-manager.log 2>&1 &
    ```
 
 ### 配置文件
@@ -1054,7 +1055,7 @@ vim ~/.venus-sector-manager/ext-prover.cfg
 Bin = "/root/venus-cluster/dist/bin/wdpost-master"
 
 # Args配置wdpost_master配置文件的路径
-Args = ["-c", "/root/venus-cluster/dist/bin/wdpost_master.toml"]
+Args = ["daemon", ""-c", "/root/venus-cluster/dist/bin/wdpost-master.toml"]
 
 # WD任务池的任务数设置，建议设置显卡数量的3～4倍
 Concurrent = 50
@@ -1079,11 +1080,58 @@ RUST_LOG = "info"
 
 2. 配置wdpost_slave，修改master Host地址
 
-启动（先master后slave）
-
 ```
-nohup ./wdpost-master daemon -c wdpost-master.toml > wdpost-master.log 2>&1 &
-
 FORCE_SECTOR_SIZE=34359738368 BELLMAN_LOAD_SHM=1 BELLMAN_GPU_INDEXS=1 CUDA_VISIBLE_DEVICES=1  RUST_LOG=trace nohup ./wdpost-slave daemon-command -c wdpost-slave.toml > wdpost-slave.log 2>&1 &
 ```
+
+## gpuproxy
+
+Gpuproxy:
+
+```
+nohup ./gpuproxy run --url 0.0.0.0:18888 --log-level info --db-dsn="mysql://root:admin123@192.168.200.119:3306/calib_gpuproxy" --disable-worker --fs-resource-path=/storage-nfs-4/wenjie/fs-gpuproxy-25 --resource-type=fs > gpuproxy.log 2>&1 &
+
+./gpuproxy task list
+```
+
+Gpuproxy_worker:
+
+```
+touch gpuproxy-worker.db # 创建一个空文件，用于记录 worker-id
+
+FORCE_SECTOR_SIZE=34359738368 RUST_BACKTRACE=full RUST_LOG=info BELLMAN_LOAD_SHM=1 BELLMAN_USE_MAP_BUFFER=1 BELLMAN_CIRCUIT_N=1 BELLMAN_PROOF_N=1 CUDA_VISIBLE_DEVICES=1 ./gpuproxy_worker run --gpuproxy-url http://127.0.0.1:18888 --max-tasks=1 --allow-type=0  --resource-type=fs --fs-resource-path=/storage-nfs-4/wenjie/fs-gpuproxy-25
+
+--gpuproxy-url # gpuproxy地址
+
+--max-tasks=1 # worker同时并行的任务量
+
+--allow-type=0 # 指定C2
+```
+
+修改venus-worker配置文件：
+
+```
+[processors.limitation.concurrent]
+c2 = 999
+
+[[processors.c2]]
+bin="/root/venus-cluster/dist/bin/cluster_c2_plugin"
+args = ["run", "--gpuproxy-url", "http://192.168.200.25:18888"]
+envs = {"RUST_LOG"="info"}
+weight = 99
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
