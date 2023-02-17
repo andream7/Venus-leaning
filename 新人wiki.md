@@ -1037,6 +1037,8 @@ tail -f venus-worker.log
  ./venus-sector-manager util sealer proving --miner 4685 check 31
 ```
 
+查看/mnt/mount/wenjie/<miner id>/test1~test20的20个文件state：
+
 ```
 ./venus-worker worker -c venus-worker.toml list
 ```
@@ -1125,6 +1127,12 @@ bin="/root/venus-cluster/dist/bin/cluster_c2_plugin"
 args = ["run", "--gpuproxy-url", "http://192.168.200.25:18888"]
 envs = {"RUST_LOG"="info"}
 weight = 99
+```
+
+## chain-co
+
+```
+/root/chain-co/chain-co --listen 0.0.0.0:5555 run --auth-url http://192.168.200.158:8989 --node eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiYWRtaW4iLCJwZXJtIjoiYWRtaW4iLCJleHQiOiIifQ.1-uiXKerjsAdBMP2hL6LOkGlpjD7YtyDBDMZEyI2uTg:/ip4/192.168.200.158/tcp/3453 --node eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiYWRtaW4iLCJwZXJtIjoiYWRtaW4iLCJleHQiOiIifQ.1-uiXKerjsAdBMP2hL6LOkGlpjD7YtyDBDMZEyI2uTg:/ip4/192.168.200.109/tcp/1234
 ```
 
 
