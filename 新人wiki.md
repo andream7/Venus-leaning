@@ -1037,6 +1037,12 @@ tail -f venus-worker.log
  ./venus-sector-manager util sealer proving --miner 4685 check 31
 ```
 
+```
+./venus-worker worker -c venus-worker.toml list
+```
+
+
+
 
 
 
