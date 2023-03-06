@@ -4,6 +4,8 @@
 
 # 安装
 
+
+
 ## 安装要求
 
 安装k8s集群的基本要求如下，
@@ -28,8 +30,6 @@ $ cat /proc/cpuinfo
 $ cat /proc/meminfo
 ```
 
-
-
 ## 查看系统版本
 
 - Ubuntu的版本至少16.04：
@@ -43,7 +43,9 @@ Linux k8s-master01 5.8.0-41-generic #46-Ubuntu SMP Mon Jan 18 16:48:44 UTC 2021 
 $ cat /etc/lsb-release 
 ```
 
-## 主从集群主机配置
+
+
+## Master+Node配置
 
 - 设置主机名
 
@@ -61,10 +63,17 @@ hostnamectl set-hostname k8s-node2
 ```
 cat >> /etc/hosts << EOF
 127.0.0.1   $(hostname)
-192.168.65.100 k8s-master
-192.168.65.101 k8s-node1
-192.168.65.102 k8s-node2
+192.168.200.171 200-171
+192.168.200.172 200-172
 EOF
+```
+
+- 配置ssh互信
+
+```
+ssh-keygen
+
+vim ~/.ssh/authorized_keys
 ```
 
 - 时间同步：（k8s集群中的节点时间必须精确一致，所以在每个节点上添加时间同步）
@@ -76,16 +85,11 @@ sudo apt-get install ntpdate
 # 系统时间与网络同步
 ntpdate cn.pool.ntp.org
 
-# 时间写入硬件
-hwclock --systohc
-
 # 查看时间是否已经同步
 date
 ```
 
-## 关闭swap
-
-k8s不支持Linux swap功能，这是由于出于集群性能和稳定性考虑，但未来这个问题会被得到解决，可能在1.22这个版本开启swap支持，更多关于这个问题的详细讨论请见：[Kubelet/Kubernetes should work with Swap Enabled](https://github.com/kubernetes/kubernetes/issues/53533)
+- 关闭swap
 
 ```
 # 查看内存中的swap分配情况
@@ -95,25 +99,20 @@ Mem:           3932         854         457          15        2620        2783
 Swap:          2047           0        2047
 
 
-# 临时关闭swap
-$ sudo swapoff -a 
+# 永久关闭 swap ，需要重启：
+sed -ri 's/.*swap.*/#&/' /etc/fstab
 
 # 查看内存中的swap分配为0
 $ free -m 
               total        used        free      shared  buff/cache   available
 Mem:           3932        1265        1074          12        1592        2499
-Swap:             0           0           0
-
-# 永久关闭swap（请使用root用户运行如下命令）
-$ echo "vm.swappiness=0" >> /etc/sysctl.conf                                                                    
-$ sysctl -p /etc/sysctl.conf 
+Swap:             0           0           0 
 ```
 
-## 开启iptables
-
-- 修改 /etc/sysctl.conf 文件：
+- 开启iptables
 
 ```
+# 修改 /etc/sysctl.conf 文件，可能没有，追加
 echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
 echo "net.bridge.bridge-nf-call-ip6tables = 1" >> /etc/sysctl.conf
 echo "net.bridge.bridge-nf-call-iptables = 1" >> /etc/sysctl.conf
@@ -121,26 +120,22 @@ echo "net.ipv6.conf.all.disable_ipv6 = 1" >> /etc/sysctl.conf
 echo "net.ipv6.conf.default.disable_ipv6 = 1" >> /etc/sysctl.conf
 echo "net.ipv6.conf.lo.disable_ipv6 = 1" >> /etc/sysctl.conf
 echo "net.ipv6.conf.all.forwarding = 1"  >> /etc/sysctl.conf
-```
 
-```
 # 加载 br_netfilter 模块：
 modprobe br_netfilter
+
+# 持久化修改
+sysctl -p
 
 # 确认netfilter的加载情况，若能看到如下的命令输出，则说明netfilter已被加载
 $ lsmod | grep br_netfilter
 br_netfilter           28672  0
 bridge                200704  1 br_netfilter
-
-# 持久化修改（保留配置包本地文件，重启系统或服务进程仍然有效）：
-sysctl -p
 ```
 
-## 开启ipvs（全节点）
+- 开启ipvs
 
 https://www.jianshu.com/p/d1ba8b910085
-
-- kubeproxy开启ipvs的前置条件
 
 ```
 # 安装ipset软件包
@@ -164,30 +159,9 @@ EOF
 chmod 755 /etc/sysconfig/modules/ipvs.modules && bash /etc/sysconfig/modules/ipvs.modules && lsmod | grep -e ip_vs -e nf_conntrack_ipv4
 ```
 
-## 检查所需端口和主机配置
+- 重启
 
-k8s在master节点和worker节点有不同的[端口需求](https://kubernetes.io/zh/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#check-required-ports)，
-
-master节点（控制平面），
-
-- TCP 6443，Kubernetes API 服务器
-- TCP 2379-2380，etcd 服务器客户端 API
-- TCP 10250，Kubelet API
-- TCP 10251，kube-scheduler
-- TCP 10252，kube-controller-manager
-
-worker节点（工作平面），
-
-- TCP 10250，Kubelet API
-- TCP 30000-32767，NodePort 服务
-
-在搭建过程中需要确认上述端口没有被占用。
-
-
-
-## 重启
-
-- 上述配置都设置后，重启三台机器。
+- 上述配置都设置后，重启Master和Node所在对全部机器。
 
 ## 安装docker（全节点）
 
@@ -209,18 +183,17 @@ $ sudo add-apt-repository \
 $ sudo apt-get update
 $ sudo apt-get install docker-ce docker-ce-cli
 
-# 安装完毕之后可以在如下路径查看到docker container runtime，这是k8s的缺省搜索路径
-# https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/
-# kubeadm automatically tries to detect an installed container runtime by scanning through a list of well known Unix domain sockets.
-```
+# 启动 Docker 
+systemctl start docker
 
-- 修改配置
+# 开启自动启动
+systemctl enable docker
 
-```
-# 配置 Docker daemon，设置cgroupdriver为systemd
+# 验证 Docker 是否安装成功：
+docker version
+
 # 设置阿里云Docker镜像加速器
-sudo mkdir /etc/docker
-$ cat <<EOF | sudo tee /etc/docker/daemon.json
+cat <<EOF | sudo tee /etc/docker/daemon.json
 {
   "exec-opts": ["native.cgroupdriver=systemd"],
   "registry-mirrors": ["https://klmgh2jx.mirror.aliyuncs.com"],
@@ -231,28 +204,25 @@ $ cat <<EOF | sudo tee /etc/docker/daemon.json
   "storage-driver": "overlay2"
 }
 EOF
-mv daemon.json /etc/docker/
 
-# 启动/重启
-systemctl start docker
-
-# 开机自启
-systemctl enable docker
-
-# 验证docker是否安装成功
-docker version
+sudo systemctl restart docker
+sudo systemctl status docker
 ```
 
 ## 安装kubeadm、kubelet、kubectl（全节点）
 
 ```
-# 添加证书
-$ curl https://mirrors.aliyun.com/kubernetes/apt/doc/apt-key.gpg | apt-key add - 
-
-# 添加k8s apt国内源
-$ sudo vim /etc/apt/sources.list.d/kubernetes.list
-# 写入内容
+# 使用阿里云镜像
+curl https://mirrors.aliyun.com/kubernetes/apt/doc/apt-key.gpg | sudo apt-key add - 
+sudo vim /etc/apt/sources.list.d/kubernetes.list
 deb https://mirrors.aliyun.com/kubernetes/apt/ kubernetes-xenial main
+
+# 使用中科大镜像
+# 添加GPG Key
+$ curl -fsSL https://raw.githubusercontent.com/EagleChen/kubernetes_init/master/kube_apt_key.gpg | sudo apt-key add -
+# 添加K8S软件源
+$ sudo add-apt-repository "deb http://mirrors.ustc.edu.cn/kubernetes/apt kubernetes-xenial main"
+
 
 # 查看可安装版本
 $ apt-get update
@@ -283,14 +253,7 @@ KUBE_PROXY_MODE="ipvs"
 $ sudo systemctl restart kubelet
 
 # 查看状态
-systemctl status kubelet  
-
-
-# 查看kubelet日志
-$ tail -f /var/log/syslog
-
-# 设置开机启动
-systemctl enable kubelet
+systemctl status kubelet
 ```
 
 
@@ -373,7 +336,15 @@ $ sudo kubeadm config print join-defaults
 
 ```
 kubeadm reset
-rm -fr ~/.kube/  /etc/kubernetes/* var/lib/etcd/*
+rm -fr ~/.kube/  /etc/kubernetes/* /var/lib/etcd/* /etc/cni/net.d
+rm -fr ~/.kube/ /etc/cni/net.d
+
+lsof -i :6443|grep -v "PID"|awk '{print "kill -9",$2}'|sh
+lsof -i :10250|grep -v "PID"|awk '{print "kill -9",$2}'|sh
+lsof -i :10257|grep -v "PID"|awk '{print "kill -9",$2}'|sh
+lsof -i :10259|grep -v "PID"|awk '{print "kill -9",$2}'|sh
+lsof -i :2379|grep -v "PID"|awk '{print "kill -9",$2}'|sh
+lsof -i :2380|grep -v "PID"|awk '{print "kill -9",$2}'|sh
 ```
 
 
@@ -421,7 +392,7 @@ $ kubectl get cm kube-proxy -n kube-system -o yaml | grep mode
 kubectl get pod -n kube-system | grep kube-proxy
 
 # 再delete让它自拉起
-# kubectl get pod -n kube-system | grep kube-proxy |awk '{system("kubectl delete pod "$1" -n kube-system")}'
+kubectl get pod -n kube-system | grep kube-proxy |awk '{system("kubectl delete pod "$1" -n kube-system")}'
 
 # 再查看
 kubectl get pod -n kube-system | grep kube-proxy
@@ -429,11 +400,32 @@ kubectl get pod -n kube-system | grep kube-proxy
 # 测试接口
 curl localhost:10249/proxyMode
 
+
+
 # 查看 ipvs 转发规则
 ipvsadm -L -n
 ```
 
 
+
+## 部署网络插件（主节点）
+
+- k8s支持多种网络插件：flannel、calico、canal
+
+```
+# 部署calio
+$ kubectl apply -f calico.yaml
+
+# 查看部署CNI网络插件进度：
+watch kubectl get pods -n kube-system
+
+# 再次在Master节点使用kubectl工具查看节点状态：
+kubectl get nodes
+
+# 查看集群健康状况：
+kubectl get cs
+kubectl cluster-info
+```
 
 
 
@@ -441,8 +433,7 @@ ipvsadm -L -n
 
 ```
 # 把工作节点加入集群（只在工作节点跑）
-kubeadm join 192.168.18.100:6443 --token jv039y.bh8yetcpo6zeqfyj \
-    --discovery-token-ca-cert-hash sha256:3c81e535fd4f8ff1752617d7a2d56c3b23779cf9545e530828c0ff6b507e0e26
+kubeadm join 192.168.200.171:6443 --token jdrgfi.jnro83uasp5870e9 --discovery-token-ca-cert-hash sha256:8407bbf4ee1a0a9e55e0dd103a88bddbb343946f717244db72531bf25d0237d9 --node-name k8s-master
 ```
 
 - 默认的token有效期为2小时，当过期之后，该token就不能用了，这时可以使用如下的命令创建token：
@@ -458,32 +449,8 @@ kubeadm token create --ttl 0 --print-join-command
 
 ```
 scp -r $HOME/.kube k8s-node1:$HOME
+scp /etc/kubernetes/admin.conf root@192.168.200.172:~/.kube/config
 ```
-
-
-
-
-
-## 部署网络插件（主节点）
-
-- k8s支持多种网络插件：flannel、calico、canal
-
-```
-# 部署calio
-$ kubectl apply -f https://projectcalico.docs.tigera.io/v3.19/manifests/calico.yaml
-
-# 查看部署CNI网络插件进度：
-watch kubectl get pods -n kube-system
-
-# 再次在Master节点使用kubectl工具查看节点状态：
-kubectl get nodes
-
-# 查看集群健康状况：
-kubectl get cs
-kubectl cluster-info
-```
-
-
 
 ## 生成yaml文件
 
@@ -3400,3 +3367,150 @@ helm install <db> --set persistence.storageClass="managed-nfs-storage" <stable>/
 6. 使用Pod控制器部署镜像
 7. 创建Service或Ingress对外暴露服务
 8. 对集群进行监控，升级等
+
+# Dockerfile
+
+ARG：指定镜像内使用的参数，可以在docker build时，使用--build-arg改变。
+
+FROM：基础镜像
+
+WORKDIR：工作目录
+
+COPY：复制主机src路径下的内容到镜像的dest目录，但不会自动解压缩。
+
+RUN：镜像构建过程中运行的命令
+
+ENV：环境变量，可以在docker run时通过-e修改。
+
+ENTRYPOINT：镜像默认入口及运行命令
+
+## mysql
+
+```
+docker search mysql
+docker pull mysql:latest
+docker run --name mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=123456 -d mysql
+docker exec -it mysql bash
+mysql -u root -p
+show databases;
+create database venus_auth;
+show databases;
+
+create user 'user'@'ip' identified by '123456';#创建一个主机地址是ip登录密码是123456的user用户
+grant all privileges on *.* to 'user'@'ip';#链接上一步，给他所有权限
+
+use mysql;
+alter user 'mysql'@'%' identified by '123456' password expire never;#修改加密规则
+alter user 'mysql'@'%' identified by '123456' mysql_native_password by '123456';#再次重置密码
+flush privilege；#刷新下数据权限
+```
+
+Deployment:
+
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deployment
+  namespace: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-pod
+  template:
+    metadata:
+      labels:
+        app: nginx-pod
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.17.1
+        ports:
+        - containerPort: 80
+        
+kubectl create -f pc-deployment.yaml
+```
+
+Service：
+
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-clusterip
+  namespace: dev
+spec:
+  selector:
+    app: nginx-pod
+  type: ClusterIP
+  clusterIP: 10.96.96.96  # service的ip地址，如果不写，默认会生成一个
+  ports:
+  - protocol: TCP
+    port: 8080  # service的端口
+    targetPort: 80  # pod的端口
+
+```
+
+
+
+## venus-auth
+
+```
+# Dockerfile
+ARG RUNTIME_TAG=latest
+
+FROM filvenus/venus-buildenv AS buildenv
+
+WORKDIR /build
+
+COPY ./go.mod /build/
+COPY ./exter[n] ./go.mod  /build/extern/
+ENV GOPROXY="https://goproxy.cn,direct"
+RUN  go mod download
+
+COPY . /build
+RUN make
+
+
+FROM filvenus/venus-runtime:${RUNTIME_TAG}
+
+ARG BUILD_TARGET=
+ENV VENUS_COMPONENT=${BUILD_TARGET}
+
+# copy the app from build env
+COPY --from=buildenv  /build/${BUILD_TARGET} /app/${BUILD_TARGET}
+
+#ENTRYPOINT ["/script/init.sh", "run"]
+ENTRYPOINT ["./venus-auth"]
+
+# build、run
+docker build --build-arg https_proxy=$(BUILD_DOCKER_PROXY) --build-arg BUILD_TARGET=venus-auth  -t venus-auth docker tag venus-auth filvenus/venus-auth:$(TAG)
+docker run -d -p 8989:8989 --name venus-auth-container filvenus/venus-auth:test run --db-type="mysql" --mysql-dsn="root:123456@(127.0.0.1:3306)/venus_auth?parseTime=true&loc=Local&charset=utf8mb4&collation=utf8mb4_unicode_ci&readTimeout=10s&writeTimeout=10s"
+```
+
+
+
+```
+1. 创建test环境
+NewK8sEnvDeployer
+
+2. 创建venus-auth Deployment
+NewVenusAuthHADeployer
+
+3. 转发pod apiserver 到本机，用于debug
+PortForwardPod
+
+4. 等待apiserver启动完成
+WaitForAPIReady
+
+5. 创建venus auth client
+NewAuthClient
+
+6. 使用authAPIClient进行交互
+authAPIClient.CreateUser
+authAPIClient.GenerateToken
+```
+
+
+

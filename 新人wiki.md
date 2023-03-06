@@ -119,7 +119,7 @@ nohup ./venus-auth run > auth.log 2>&1 &
 [db]
   # 支持: badger (默认), mysql
   type = "mysql"
-  DSN = "root:admin123@(192.168.200.119:3306)/venus_wenjie_auth?parseTime=true&loc=Local&charset=utf8mb4&collation=utf8mb4_unicode_ci&readTimeout=10s&writeTimeout=10s"
+  DSN = "root:admin123@(192.168.200.119:3306)/calib_venus_auth?parseTime=true&loc=Local&charset=utf8mb4&collation=utf8mb4_unicode_ci&readTimeout=10s&writeTimeout=10s"
   # conns 1500 concurrent
   maxOpenConns = 64
   maxIdleConns = 128
@@ -155,19 +155,6 @@ sign user need active
 
 ## venus-miner
 
-**`venus-miner`一轮出块流程为：**
-
-1. 请求同步节点获取parent TipSet（通常是最近一次有出块周期的`Block集`）及空轮数（表示该周期没有任何矿工出块）
-2. 统计本周期获得出块权的矿工，出块必要数据（随机数，选中扇区信息等）
-3. 为每个获得出块权的矿工计算计算获胜证明，选择消息，创建区块
-4. 验证本周期产生的区块合法性（是否存在共识错误，因为广播具有共识错误的区块会受到Fil惩罚），广播区块。
-
-### 组件配合
-
-1. 注册到gateway
-2. 调用venus-wallet进行签名、签名验证
-3. 调用venus-cluster计算获胜证明
-
 #### address
 
 ```
@@ -185,6 +172,13 @@ Token: admin user token
 
 ```
 ./venus-miner init --api /ip4/127.0.0.1/tcp/3453 --gateway-api /ip4/127.0.0.1/tcp/45132 --auth-api http://127.0.0.1:8989 --token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlcjAxIiwicGVybSI6ImFkbWluIiwiZXh0IjoiIn0.zeaAgQcaPuVrEnOVMY2HQbREdjk9klQiJe7ORM4qnyY --slash-filter mysql --mysql-conn "root:admin123@(192.168.200.119:3306)/calib_venus_miner?parseTime=true&loc=Local&charset=utf8mb4&collation=utf8mb4_unicode_ci&readTimeout=10s&writeTimeout=10s"
+
+./venus-miner init
+--api=/ip4/<VENUS_DAEMON_IP>/tcp/PORT \
+--gateway-api=/ip4/<VENUS_GATEWAY_IP>/tcp/PORT \
+--auth-api <http://VENUS_AUTH_IP:PORT> \
+--token <SHARED_ADMIN_AUTH_TOKEN> \
+--slash-filter local
 ```
 
 ### 启动
@@ -271,18 +265,6 @@ auth管理的账号时生产者和消费者间的桥梁。venus-gateway从venus-
    1. venus-cluster消费的消息是`ComputeProof`计算`WinningPoSt`证明数据。
 2. 与消息生产者交互（venus-miner/venus-messenger）
    1. 对外提供api
-
-### 下载编译
-
-```
-git clone https://github.com/ipfs-force-community/venus-gateway.git
-cd venus-gateway
-
-go get github.com/google/flatbuffers@v1.12.1
-
-make deps
-make
-```
 
 ### 启动
 
@@ -482,8 +464,10 @@ signer-toke：上面获取的wallet token（只需要“：”之前的）
 auth-token：sign user token
 
 ```
-./market-client run --node-url=/ip4/127.0.0.1/tcp/3453 --messager-url=/ip4/127.0.0.1/tcp/39812 --auth-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlcjAyIiwicGVybSI6InNpZ24iLCJleHQiOiIifQ.7z9oGP4n9qGNBmzD6LJks0dn_eA4kjnZG_WIMTIFUWg --signer-type=wallet --signer-url=/ip4/127.0.0.1/tcp/5678/http --signer-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBbGxvdyI6WyJyZWFkIiwid3JpdGUiLCJzaWduIl19.xklx8WH7B9v_9n_7XacY06D0i6fbFTPDKfJZLOfSDNk
---addr=f3vwcu7foxpdulvj2byp4yyls2w372x3qiizai3cbdvu6fyfgwu2mpaep2totrut4j2ikzfoqllnmyty4otwsq
+./market-client run 
+
+./market-client run --addr=f3vwcu7foxpdulvj2byp4yyls2w372x3qiizai3cbdvu6fyfgwu2mpaep2totrut4j2ikzfoqllnmyty4otwsq --auth-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoic2lnbi11c2VyIiwicGVybSI6InNpZ24iLCJleHQiOiIifQ.j8DPkO6gpheC2dSoCjVDOAIiWAvv86Ec8LoY2wMf1Ko --messager-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoic2lnbi11c2VyIiwicGVybSI6InNpZ24iLCJleHQiOiIifQ.j8DPkO6gpheC2dSoCjVDOAIiWAvv86Ec8LoY2wMf1Ko --messager-url=/ip4/127.0.0.1/tcp/39812 --node-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoic2lnbi11c2VyIiwicGVybSI6InNpZ24iLCJleHQiOiIifQ.j8DPkO6gpheC2dSoCjVDOAIiWAvv86Ec8LoY2wMf1Ko --node-url=/ip4/127.0.0.1/tcp/3453 --signer-type=wallet --signer-url=/ip4/127.0.0.1/tcp/5678/http --signer-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBbGxvdyI6WyJyZWFkIiwid3JpdGUiLCJzaWduIl19.xklx8WH7B9v_9n_7XacY06D0i6fbFTPDKfJZLOfSDNk
+
 
 nohup ./market-client run > market-client.log 2>&1 &
 ```
@@ -651,7 +635,7 @@ Messager = "/ip4/0.0.0.0/tcp/39812"
 Market = "/ip4/127.0.0.1/tcp/41235"
 Gateway = ["/ip4/0.0.0.0/tcp/45132"]
 # sign user token
-Token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidGVzdC11c2VyMDEiLCJwZXJtIjoiYWRtaW4iLCJleHQiOiIifQ.cgFBE82bdLPuGN_ZJ7FzetpUd4bbj-U34a8cyRju4jI"
+Token = ""
 ```
 
 本地订单piece存储：
@@ -662,10 +646,15 @@ Token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidGVzdC11c2VyMDEiLCJwZX
 # 与market中配置保持一致
 Name = "local"
 Path = "/piece/storage/path"
-#Plugin = ""
-#PluginName = "s3store"
-[Common.PieceStores.Meta]
-#SomeKey = "SomeValue"
+
+# 扇区持久化存储
+[[Common.PersistStores]]
+Name = "storage"
+Path = "/storage-nfs-3/zsk/<miner-id>"
+# 允许进行分配的矿工列表
+# 不设置时，相当于允许全部；设置时，相当于白名单
+# 只需要设置数字位，无需字母
+AllowMiners = [1056]
 ```
 
 使用mysql存储sector：
@@ -696,26 +685,6 @@ dsn = "root:admin123@(192.168.200.119:3306)/calib_venus_sector_manager?parseTime
 从本地数据库导入mysql
 
 ./venus-sector-manager util migrate --from badger --to plugin
-```
-
-扇区持久化存储：
-
-```
-[[Common.PersistStores]]
-Name = "storage"
-Path = "/storage-nfs-3/zsk/<miner-id>"
-#Strict = false
-#ReadOnly = false
-#Weight = 0
-# 允许进行分配的矿工列表
-# 不设置时，相当于允许全部；设置时，相当于白名单
-# 只需要设置数字位，无需字母
-AllowMiners = [1056]
-#DenyMiners = [3, 4]
-#Plugin = ""
-#PluginName = "s3store"
-[Common.PersistStores.Meta]
-#SomeKey = "SomeValue"
 ```
 
 Miners：
@@ -1305,7 +1274,9 @@ weight = 99
 158
 
 ```
-./chain-co --listen 0.0.0.0:5555 run --auth-url http://192.168.200.158:8989 --node eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlcjAxIiwicGVybSI6ImFkbWluIiwiZXh0IjoiIn0.zeaAgQcaPuVrEnOVMY2HQbREdjk9klQiJe7ORM4qnyY:/ip4/192.168.200.158/tcp/3453 --node eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiYWRtaW4iLCJwZXJtIjoiYWRtaW4iLCJleHQiOiIifQ.1-uiXKerjsAdBMP2hL6LOkGlpjD7YtyDBDMZEyI2uTg:/ip4/192.168.200.109/tcp/1234
+./chain-co --listen 0.0.0.0:5555 run --auth-url http://192.168.200.158:8989 --node eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiYWRtaW4tdXNlciIsInBlcm0iOiJhZG1pbiIsImV4dCI6IiJ9.34HiClG8eQVQclVUWHSIbVxbtg4AsiMxWMgilhwGrsw:/ip4/192.168.200.158/tcp/3453 --node eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiYWRtaW4iLCJwZXJtIjoiYWRtaW4iLCJleHQiOiIifQ.1-uiXKerjsAdBMP2hL6LOkGlpjD7YtyDBDMZEyI2uTg:/ip4/192.168.200.109/tcp/1234
+
+nohup ./chain-co --listen 0.0.0.0:5555 run --auth-url http://192.168.200.158:8989 --node eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiYWRtaW4tdXNlciIsInBlcm0iOiJhZG1pbiIsImV4dCI6IiJ9.34HiClG8eQVQclVUWHSIbVxbtg4AsiMxWMgilhwGrsw:/ip4/192.168.200.158/tcp/3453 > chain-co.log 2>&1 &
 ```
 
 ## gpuproxy每阶段时间统计
