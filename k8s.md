@@ -230,7 +230,7 @@ $ apt-cache madison kubelet
 
 # 安装指定版本
 # 注意,因为V1.24以上的k8s版本已经弃用了docker，所以只能安装1.23.9
-$  sudo apt-get install -y kubelet=1.23.9-00 kubeadm=1.23.9-00 kubectl=1.23.9-00
+$  sudo apt-get install -y kubelet=1.26.1-00 kubeadm=1.26.1-00 kubectl=1.26.1-00
 
 # 设置开机启动
 $  sudo systemctl enable kubelet && sudo systemctl start kubelet
@@ -271,7 +271,7 @@ systemctl status kubelet
 - --pod-network-cidr=10.244.0.0/16   k8s pod网段，不能和service-cidr写一样，默认10.244.0.0/16
 
 ```
-kubeadm init --apiserver-advertise-address=192.168.200.171 --image-repository=registry.cn-hangzhou.aliyuncs.com/google_containers --kubernetes-version v1.26.1 --service-cidr=10.96.0.0/12 --pod-network-cidr=10.244.0.0/16 --node-name k8s-master --control-plane-endpoint=cluster-endpoint
+kubeadm init --apiserver-advertise-address=192.168.200.103 --image-repository=registry.cn-hangzhou.aliyuncs.com/google_containers --kubernetes-version v1.26.1 --service-cidr=10.96.0.0/12 --pod-network-cidr=10.244.0.0/16 --node-name k8s-master --control-plane-endpoint=cluster-endpoint
 ```
 
 - 配置kubeconfig
@@ -410,11 +410,9 @@ ipvsadm -L -n
 
 ## 部署网络插件（主节点）
 
-- k8s支持多种网络插件：flannel、calico、canal
+- k8s支持多种网络插件：flannel
 
 ```
-# 部署calio
-$ kubectl apply -f calico.yaml
 
 # 查看部署CNI网络插件进度：
 watch kubectl get pods -n kube-system
@@ -462,6 +460,8 @@ kubectl create deployment nginx --image=nginx:1.17.1 --dry-run=client -n dev -o 
 # 如果yaml文件太长，可以写入到指定的文件中。
 kubectl create deployment nginx --image=nginx:1.17.1 --dry-run=client -n dev -o yaml > test.yaml
 ```
+
+
 
 # 资源管理
 

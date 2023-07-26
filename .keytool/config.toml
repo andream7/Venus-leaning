@@ -1,0 +1,12 @@
+Version = 2
+Network = "calibrationnet"
+Author = "http://192.168.200.171:9528/rpc/v0"
+NodeAPIs = ["https://api.calibration.node.glif.io/rpc/v0"]
+Messenger = "https://api.calibration.node.glif.io/rpc/v0"
+Path = "./.keytool/"
+DustValue = "1000000000"
+NetVersion = 20
+
+[DbCfg]
+  Conn = "./keytool_calibration.sqlite"
+  Dbg = false

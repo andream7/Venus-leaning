@@ -246,7 +246,7 @@ set-sel-msg-num  # 设置地址一轮推送消息的最大数量
 set-fee-params   # 设置地址fee相关参数
 ```
 
-## venus-gateway
+## venus-gateway  
 
 作用：
 
@@ -594,7 +594,7 @@ make all
    如果不加--exid，每次创建出的都是相同miner id
 
    ```
-   ./venus-sector-manager util miner create --from=f3vwcu7foxpdulvj2byp4yyls2w372x3qiizai3cbdvu6fyfgwu2mpaep2totrut4j2ikzfoqllnmyty4otwsq --sector-size=32GiB --exid <随机数>
+   ./venus-sector-manager util miner create --from=f3vwcu7foxpdulvj2byp4yyls2w372x3qiizai3cbdvu6fyfgwu2mpaep2totrut4j2ikzfoqllnmyty4otwsq --sector-size=32GiB --exid <随机数>
    ```
 
    如果create miner时失败，需要到gateway查询：
@@ -861,26 +861,12 @@ numactl -H
 mount -t hugetlbfs -o mode=0777,pagesize=1G none /mnt/huge/
 cd /mnt/huge/
 
+# 创建10个32G大小到文件，用于填充刚才分配的内存空间。
 echo 80 > /sys/devices/system/node/node0/hugepages/hugepages-1048576kB/nr_hugepages
 echo 80 > /sys/devices/system/node/node1/hugepages/hugepages-1048576kB/nr_hugepages
 echo 80 > /sys/devices/system/node/node2/hugepages/hugepages-1048576kB/nr_hugepages
 echo 80 > /sys/devices/system/node/node3/hugepages/hugepages-1048576kB/nr_hugepages
 echo 80 > /sys/devices/system/node/node4/hugepages/hugepages-1048576kB/nr_hugepages
-```
-
-创建10个32G大小到文件，用于填充刚才分配的内存空间。
-
-```
-cd ~
-mkdir wenjie
-
-# 下载proof-utils-846a66-2021-11-29_17-04-30-md5-a7b9067a424151eb7cdc6166638e2424.tar.gz
-# 将gen_cache_and_param和2/p3out-blst-32g.dat保存到wenjie目录下
-
-# 以下命令执行时间长
-./gen_cache_and_param hugepage --num 10 --size 32GiB
-./gen_cache_and_param p4-param --size 32GiB
-./gen_cache_and_param wdpost-param --size 32GiB
 
 # 可以看到创建出的5个文件
 ls /mnt/huge
@@ -891,9 +877,20 @@ echo 80 > /sys/devices/system/node/node6/hugepages/hugepages-1048576kB/nr_hugepa
 echo 80 > /sys/devices/system/node/node7/hugepages/hugepages-1048576kB/nr_hugepages
 echo 80 > /sys/devices/system/node/node8/hugepages/hugepages-1048576kB/nr_hugepages
 echo 80 > /sys/devices/system/node/node9/hugepages/hugepages-1048576kB/nr_hugepages
+```
 
+```
+cd ~
+mkdir wenjie
+
+# 下载proof-utils-846a66-2021-11-29_17-04-30-md5-a7b9067a424151eb7cdc6166638e2424.tar.gz
+# 将gen_cache_and_param和2/p3out-blst-32g.dat保存k8s目录下
+
+# 以下命令执行时间长
+     hugepage --num 10 --size 32GiB
+./gen_cache_and_param p4-param --size 32GiB
+./gen_cache_and_param wdpost-param --size 32GiB
 ./gen_cache_and_param parent-cache --size 32GiB
-
 ./gen_cache_and_param p4-lcs -h
 ./gen_cache_and_param p4-lcs --p3-output p3out-blst-32g.dat --size 32GiB
 
@@ -1039,6 +1036,32 @@ force-ext-processors processor pc1 --huge_mem_path_32g /mnt/huge --huge_mem_page
 force-ext-processors processor pc1 --huge_mem_path_32g /mnt/huge --huge_mem_page_count_32g 10
 force-ext-processors processor pc2
 ```
+
+## 各阶段日志
+
+Pre-commit:
+
+```
+2023-04-23T16:59:14.526+0800	DEBUG	commitmgr	commitmgr/commitmgr.go:776	handle message receipt	{"sector-id": {"Miner":1007,"Number":366}, "stage": "pre-commit", "msg-cid": "bafk4bzacidjgoezzqvqzah7l4xpu3w5j3jk7ngwyy262hd5vuwtlhbizxfnionxisow47ekolg3rowullveopxgnjalqb4jmi7ywprks65wsvcgb", "msg-state": "OnChainMsg", "msg-signed-cid": "bafy2bzacec5zqhuh6ruqtyknqhcdqxna2g2k4ow6ww5mvl6xoeru5xcxq6mmw"}
+```
+
+Prove-commit
+
+```
+2023-04-23T16:59:21.623+0800	DEBUG	commitmgr	commitmgr/commitmgr.go:776	handle message receipt	{"sector-id": {"Miner":1007,"Number":358}, "stage": "prove-commit", "msg-cid": "bafk4bzacidqtxakdmgy3juei5mp5gbjqlmy2w5xfk7soogzvhojcucwtq2islyapsw5ugyudejxdeujldgh2n4ve4yrmtb7elkfecyy67usok3lv", "msg-state": "OnChainMsg", "msg-signed-cid": "bafy2bzacear3zwk3o3d3afidh6t4kbujcwruhuvrinwbb7ejhmjv2ut77lg3e"}
+```
+
+Submitted window post:
+
+```
+2023-04-23T16:59:05.091+0800	INFO	poster	poster/runner.go:176	Submitted window post: bafy2bzacebeukpscmz3rb2werpgs7n2qbouxveybcg4hnlbiqt5memx4bqvmq	{"mid": "1007", "ddl-idx": 30, "ddl-open": "8722", "ddl-close": "8782", "ddl-challenge": "8702", "stage": "submit-post", "posts": 1, "tsk": "{ bafy2bzaced2cctgxqxko6tj5n4vbkas4a7hghx3vhu2mzdnoilil2zim4zy6g }", "tsh": "8727", "comm-epoch": "8702", "msg-id": "bafy2bzacebeukpscmz3rb2werpgs7n2qbouxveybcg4hnlbiqt5memx4bqvmq"}
+```
+
+declare faults recovered message published:
+
+````
+2023-04-23T13:36:35.050+0800    WARN    poster  poster/runner.go:573    declare faults recovered message published      {"mid": "1005", "ddl-idx": 45, "ddl-open": "8332", "ddl-close": "8392", "ddl-challenge": "8312", "tsk": "{ bafy2bzacedyvvt4tafhwbwx7xjd3554ay72rtgalkdc63ki2awcq6zryitt3y }", "tsh": "8322", "decl-index": 47, "stage": "check-recoveries", "partitions": "6", "mid": "bafy2bzacedtzdyngfgyrro7w2a2ecztueqfj2bg7tyt3pntl2ku5j5acaka6w-45-8332"}
+````
 
 
 
@@ -1335,4 +1358,4 @@ git log # 可以看到最上面的commit开头是87705f4……，说明moving成
 git reflog # 再次查看，发现“moving from main to 87705f4
 ```
 
-![image-20230222143036455](/Users/shukzhang/Library/Application Support/typora-user-images/image-20230222143036455.png)
+![image-20230222143036455](/Users/shukzhang/Library/Application Support/typora-user-images/image-20230222143036455.png)makr
