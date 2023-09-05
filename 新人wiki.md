@@ -459,26 +459,23 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBbGxvdyI6WyJyZWFkIiwid3JpdGUiLCJzaWduIl1
 ./venus-wallet list
 ```
 
-运行：
+运行（**droplet使用本地的venus-wallet进行签名**）：
 
-- --addr: `./venus-wallet new bls`的钱包地址
-- --auth-token：sign user token
-- --signer-toke：上面获取的wallet token（只需要“：”之前的）
-  
-
-**droplet使用本地的venus-wallet进行签名**
+- --addr: `./venus-wallet new bls`创建的钱包地址
+- --auth-token、--messager-token和--node-token：使用`./sophon-auth token list`，找一个perm为sign/write/read权限的token，三个参数使用一样的token值。token的值类似`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidGVzdC0xMiIsInBlcm0iOiJzaWduIiwiZXh0IjoiIn0.aKvU8GGC4FI4rZnDSWwkvLRjxuevVln1qXaPV70tKOA`
+- --signer-toke：`./venus-wallet auth api-info --perm=sign`获取的wallet token（只需要“：”之前的）
 
 ```
 ./droplet-client run \
-  --addr=f3vwcu7foxpdulvj2byp4yyls2w372x3qiizai3cbdvu6fyfgwu2mpaep2totrut4j2ikzfoqllnmyty4otwsq \
-  --auth-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoic2lnbi11c2VyIiwicGVybSI6InNpZ24iLCJleHQiOiIifQ.j8DPkO6gpheC2dSoCjVDOAIiWAvv86Ec8LoY2wMf1Ko \
-  --messager-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoic2lnbi11c2VyIiwicGVybSI6InNpZ24iLCJleHQiOiIifQ.j8DPkO6gpheC2dSoCjVDOAIiWAvv86Ec8LoY2wMf1Ko \
+  --addr=<wallet address> \
+  --auth-token=<sign token> \
+  --messager-token=<sign token> \
   --messager-url=/ip4/127.0.0.1/tcp/39812 \
-  --node-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoic2lnbi11c2VyIiwicGVybSI6InNpZ24iLCJleHQiOiIifQ.j8DPkO6gpheC2dSoCjVDOAIiWAvv86Ec8LoY2wMf1Ko \
+  --node-token=<sign token> \
   --node-url=/ip4/127.0.0.1/tcp/3453 \
   --signer-type=wallet \
   --signer-url=/ip4/127.0.0.1/tcp/5678/http \
-  --signer-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBbGxvdyI6
+  --signer-token=<wallet token>
 
 ```
 ```
