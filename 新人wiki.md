@@ -459,14 +459,24 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBbGxvdyI6WyJyZWFkIiwid3JpdGUiLCJzaWduIl1
 
 运行：
 
-signer-toke：上面获取的wallet token（只需要“：”之前的）
+--addr: `./venus-wallet new bls`的钱包地址
+--auth-token：sign user token
+--signer-toke：上面获取的wallet token（只需要“：”之前的）
 
-auth-token：sign user token
+**droplet使用本地的venus-wallet进行签名**
 
 ```
-./market-client run 
+./market-client run \
+  --addr=f3vwcu7foxpdulvj2byp4yyls2w372x3qiizai3cbdvu6fyfgwu2mpaep2totrut4j2ikzfoqllnmyty4otwsq \
+  --auth-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoic2lnbi11c2VyIiwicGVybSI6InNpZ24iLCJleHQiOiIifQ.j8DPkO6gpheC2dSoCjVDOAIiWAvv86Ec8LoY2wMf1Ko \
+  --messager-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoic2lnbi11c2VyIiwicGVybSI6InNpZ24iLCJleHQiOiIifQ.j8DPkO6gpheC2dSoCjVDOAIiWAvv86Ec8LoY2wMf1Ko \
+  --messager-url=/ip4/127.0.0.1/tcp/39812 \
+  --node-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoic2lnbi11c2VyIiwicGVybSI6InNpZ24iLCJleHQiOiIifQ.j8DPkO6gpheC2dSoCjVDOAIiWAvv86Ec8LoY2wMf1Ko \
+  --node-url=/ip4/127.0.0.1/tcp/3453 \
+  --signer-type=wallet \
+  --signer-url=/ip4/127.0.0.1/tcp/5678/http \
+  --signer-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBbGxvdyI6
 
-./market-client run --addr=f3vwcu7foxpdulvj2byp4yyls2w372x3qiizai3cbdvu6fyfgwu2mpaep2totrut4j2ikzfoqllnmyty4otwsq --auth-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoic2lnbi11c2VyIiwicGVybSI6InNpZ24iLCJleHQiOiIifQ.j8DPkO6gpheC2dSoCjVDOAIiWAvv86Ec8LoY2wMf1Ko --messager-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoic2lnbi11c2VyIiwicGVybSI6InNpZ24iLCJleHQiOiIifQ.j8DPkO6gpheC2dSoCjVDOAIiWAvv86Ec8LoY2wMf1Ko --messager-url=/ip4/127.0.0.1/tcp/39812 --node-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoic2lnbi11c2VyIiwicGVybSI6InNpZ24iLCJleHQiOiIifQ.j8DPkO6gpheC2dSoCjVDOAIiWAvv86Ec8LoY2wMf1Ko --node-url=/ip4/127.0.0.1/tcp/3453 --signer-type=wallet --signer-url=/ip4/127.0.0.1/tcp/5678/http --signer-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBbGxvdyI6WyJyZWFkIiwid3JpdGUiLCJzaWduIl19.xklx8WH7B9v_9n_7XacY06D0i6fbFTPDKfJZLOfSDNk
 
 
 nohup ./market-client run > market-client.log 2>&1 &
