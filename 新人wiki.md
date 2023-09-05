@@ -1,4 +1,6 @@
+
 [TOC]
+
 
 ps -aux | grep <name>
 
@@ -459,9 +461,10 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBbGxvdyI6WyJyZWFkIiwid3JpdGUiLCJzaWduIl1
 
 运行：
 
---addr: `./venus-wallet new bls`的钱包地址
---auth-token：sign user token
---signer-toke：上面获取的wallet token（只需要“：”之前的）
+- --addr: `./venus-wallet new bls`的钱包地址
+- --auth-token：sign user token
+- --signer-toke：上面获取的wallet token（只需要“：”之前的）
+  
 
 **droplet使用本地的venus-wallet进行签名**
 
@@ -477,8 +480,8 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBbGxvdyI6WyJyZWFkIiwid3JpdGUiLCJzaWduIl1
   --signer-url=/ip4/127.0.0.1/tcp/5678/http \
   --signer-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBbGxvdyI6
 
-
-
+```
+```
 nohup ./droplet-client run > market-client.log 2>&1 &
 ```
 
