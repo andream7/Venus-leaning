@@ -466,7 +466,7 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBbGxvdyI6WyJyZWFkIiwid3JpdGUiLCJzaWduIl1
 **droplet使用本地的venus-wallet进行签名**
 
 ```
-./market-client run \
+./droplet-client run \
   --addr=f3vwcu7foxpdulvj2byp4yyls2w372x3qiizai3cbdvu6fyfgwu2mpaep2totrut4j2ikzfoqllnmyty4otwsq \
   --auth-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoic2lnbi11c2VyIiwicGVybSI6InNpZ24iLCJleHQiOiIifQ.j8DPkO6gpheC2dSoCjVDOAIiWAvv86Ec8LoY2wMf1Ko \
   --messager-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoic2lnbi11c2VyIiwicGVybSI6InNpZ24iLCJleHQiOiIifQ.j8DPkO6gpheC2dSoCjVDOAIiWAvv86Ec8LoY2wMf1Ko \
@@ -479,7 +479,7 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBbGxvdyI6WyJyZWFkIiwid3JpdGUiLCJzaWduIl1
 
 
 
-nohup ./market-client run > market-client.log 2>&1 &
+nohup ./droplet-client run > market-client.log 2>&1 &
 ```
 
 ### 发起存储单
@@ -487,25 +487,25 @@ nohup ./market-client run > market-client.log 2>&1 &
 1. 导入待存储文件
 
    ```
-   ./market-client data import <file path>
+   ./droplet-client data import <file path>
    ```
 
 2. 选择挂单
 
    ```
-   ./market-client storage asks query f04658
+   ./droplet-client storage asks query f04658
    ```
 
 3. 发起存储单
 
    ```
-   ./market-client storage deals init
+   ./droplet-client storage deals init
    ```
 
 4. 查看订单
 
    ```
-   ./market-client storage deals list
+   ./droplet-client storage deals list
    ```
 
 ### 发起检索单
@@ -513,7 +513,7 @@ nohup ./market-client run > market-client.log 2>&1 &
 1. 提交检索单
 
 ```
-./market-client retrieval retrieve --provider t01020 bafk2bzacearla6en6crpouxo72d5lhr3buajbzjippl63bfsd2m7rsyughu42 test.txt
+./droplet-client retrieval retrieve --provider t01020 bafk2bzacearla6en6crpouxo72d5lhr3buajbzjippl63bfsd2m7rsyughu42 test.txt
 ```
 
 
