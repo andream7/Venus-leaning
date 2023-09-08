@@ -426,26 +426,37 @@ kubectl cluster-info
 
 ## 部署k8s的Node（工作节点）
 
-```
-# 把工作节点加入集群（只在工作节点跑）
-kubeadm join 192.168.200.171:6443 --token jdrgfi.jnro83uasp5870e9 --discovery-token-ca-cert-hash sha256:8407bbf4ee1a0a9e55e0dd103a88bddbb343946f717244db72531bf25d0237d9 --node-name k8s-master
-```
-
-- 默认的token有效期为2小时，当过期之后，该token就不能用了，这时可以使用如下的命令创建token：
-
+1.  在 master 节点上，生成一个加入令牌：
+  
 ```
 kubeadm token create --print-join-command
-
-# 生成一个永不过期的token
-kubeadm token create --ttl 0 --print-join-command
 ```
+此命令将生成一个包含加入命令的输出，如：
 
-- 让Node节点也能使用kubectl（将Master的.kube文件复制到Node上，在mster节点执行下面的命令：
+```
+kubeadm join <master-node-ip>:<master-port> --token <token> --discovery-token-ca-cert-hash <hash>
+```
+在新的节点上，运行上面生成的 kubeadm join 命令。此命令会安装必要的组件并将新节点加入到集群中。
+
+2. 让Node节点也能使用kubectl（将Master的.kube文件复制到Node上，在mster节点执行下面的命令：
 
 ```
 scp -r $HOME/.kube k8s-node1:$HOME
 scp /etc/kubernetes/admin.conf root@192.168.200.172:~/.kube/config
 ```
+3.  新增网络插件的配置文件，内容参考其他节点的同文件
+
+```
+/etc/cni/net.d/10-flannel.conflist
+```
+
+4. 验证节点已加入集群:
+在 master 节点或已连接到集群的任何计算机上运行：
+```
+kubectl get nodes
+```
+您应该能看到新节点的状态为 NotReady。一旦所有的系统 pods 运行起来（如网络插件），它将变为 Ready 状态。
+
 
 ## 生成yaml文件
 
