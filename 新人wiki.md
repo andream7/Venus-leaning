@@ -1304,12 +1304,8 @@ weight = 99
 
 ## chain-co
 
-158
-
 ```
-./chain-co --listen 0.0.0.0:5555 run --auth-url http://192.168.200.158:8989 --node eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiYWRtaW4tdXNlciIsInBlcm0iOiJhZG1pbiIsImV4dCI6IiJ9.34HiClG8eQVQclVUWHSIbVxbtg4AsiMxWMgilhwGrsw:/ip4/192.168.200.158/tcp/3453 --node eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiYWRtaW4iLCJwZXJtIjoiYWRtaW4iLCJleHQiOiIifQ.1-uiXKerjsAdBMP2hL6LOkGlpjD7YtyDBDMZEyI2uTg:/ip4/192.168.200.109/tcp/1234
-
-nohup ./chain-co --listen 0.0.0.0:5555 run --auth-url http://192.168.200.158:8989 --node eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiYWRtaW4tdXNlciIsInBlcm0iOiJhZG1pbiIsImV4dCI6IiJ9.34HiClG8eQVQclVUWHSIbVxbtg4AsiMxWMgilhwGrsw:/ip4/192.168.200.158/tcp/3453 > chain-co.log 2>&1 &
+/root/chain-co/sophon-co --listen 0.0.0.0:5555 run --auth eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoibnYxNy1jYWxpYiIsInBlcm0iOiJhZG1pbiIsImV4dCI6IiJ9.reRfI1JwbfJs3R5DFPutWjnX8MghBjfgx3Lf5_U3PkA:http://192.168.200.132:7777 --node eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoibnYxNy1jYWxpYiIsInBlcm0iOiJhZG1pbiIsImV4dCI6IiJ9.reRfI1JwbfJs3R5DFPutWjnX8MghBjfgx3Lf5_U3PkA:/ip4/192.168.200.132/tcp/3453 --node eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoibnYxNy1jYWxpYiIsInBlcm0iOiJhZG1pbiIsImV4dCI6IiJ9.reRfI1JwbfJs3R5DFPutWjnX8MghBjfgx3Lf5_U3PkA:/ip4/192.168.200.122/tcp/1234
 ```
 
 ## gpuproxy每阶段时间统计
