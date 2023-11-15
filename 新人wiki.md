@@ -855,17 +855,20 @@ Sealing：配置sealing策略
 SealingEpochDuration = 0
 ```
 
-
-
-## venus-worker
+# venus-worker
 
 ```
 htop
 nvtop
 numactl -H
+df -TH
 ```
 
-设置**大页内存**：分配320G的内存空间，且内存挂载到磁盘
+## 设置大页内存
+
+分配320G的内存空间，且内存挂载到磁盘（`/mnt/huge/`）。
+
+机器重启后需要重新生成大页内存。
 
 ```
 mount -t hugetlbfs -o mode=0777,pagesize=1G none /mnt/huge/
@@ -889,13 +892,15 @@ echo 80 > /sys/devices/system/node/node8/hugepages/hugepages-1048576kB/nr_hugepa
 echo 80 > /sys/devices/system/node/node9/hugepages/hugepages-1048576kB/nr_hugepages
 ```
 
+## gen_cache_and_param生成param
+
+下载`proof-utils-846a66-2021-11-29_17-04-30-md5-a7b9067a424151eb7cdc6166638e2424.tar.gz`
+
+使用tar包里面的`gen_cache_and_param`和`p3out-blst-32g.dat`这两个可执行文件
+
+gen_cache_and_param创建出的文件放在`/dev/shm`
+
 ```
-cd ~
-mkdir wenjie
-
-# 下载proof-utils-846a66-2021-11-29_17-04-30-md5-a7b9067a424151eb7cdc6166638e2424.tar.gz
-# 将gen_cache_and_param和2/p3out-blst-32g.dat保存k8s目录下
-
 # 以下命令执行时间长
      hugepage --num 10 --size 32GiB
 ./gen_cache_and_param p4-param --size 32GiB
@@ -908,7 +913,7 @@ mkdir wenjie
 ls /dev/shm
 ```
 
-![image-20230214230017626](/Users/shukzhang/Library/Application Support/typora-user-images/image-20230214230017626.png)
+## 创建`/mnt/mount/wenjie/{miner_id}`目录
 
 ```
 df -TH
@@ -924,15 +929,10 @@ du -sh *
 vim venus-worker.toml
 # 修改sealing_thread文件个数
 
-cd /mnt/mount
-root@200-6:/mnt/mount# mkdir wenjie
-root@200-6:/mnt/mount# cd wenjie/
-root@200-6:/mnt/mount/wenjie# mkdir 4682
+mkdir /mnt/mount/wenjie/4682
 root@200-6:/mnt/mount/wenjie# ll /dev/shm
 
-# 回到 ~/wenjie
-root@200-6:~/wenjie# ls
-# 将venus-worker上传到当前目录
+# 将venus-worker上传到当前目录（~/wenjie）
 gen_cache_and_param  p3out-blst-32g.dat  venus-worker
 ```
 
@@ -945,21 +945,12 @@ do
 done
 ```
 
-创建venus-worker.toml配置文件：
-
-vim字符串替换：
-
-```
-:%s/word1/word2/g
-
-word1:源word
-word2:目标word
-```
+## venus-worker.toml
 
 ```
 vim venus-worker.toml
 
-# 需要与vsm中的配置保持一致
+# 需要与sector-manager.cfg中的配置保持一致
 [[attached]]
 name = "storage"
 location = "/storage-nfs-3/zsk/4682"
@@ -991,12 +982,6 @@ AllowMiners = [4682]
 nohup ./venus-worker daemon -c venus-worker.toml >venus-worker.log 2>&1 &
 ```
 
-日志：
-
-```
-tail -f venus-worker.log
-```
-
 查看deadlines：
 
 ```
@@ -1018,23 +1003,25 @@ tail -f venus-worker.log
 force-ext-processors:
 
 ```
-add_pieces
-pc1
-pc2
-c2
-window_post
+[processors.limitation.concurrent]
+add_pieces = 2
+tree_d = 2
+pc1 = 4
+pc2 = 1
+c2 = 1
 ```
 
 venus_worker:
 
 ```
-add_pieces
-tree_d
-pc1
-pc2
-c2
-window_post
-winning_post
+[processors.limitation.concurrent]
+add_pieces = 100
+pc1 = 100
+pc2 = 1
+c2 = 20
+tree_d = 1
+snap_encode = 1
+snap_prove = 1
 ```
 
 准备数据：
@@ -1073,9 +1060,7 @@ declare faults recovered message published:
 2023-04-23T13:36:35.050+0800    WARN    poster  poster/runner.go:573    declare faults recovered message published      {"mid": "1005", "ddl-idx": 45, "ddl-open": "8332", "ddl-close": "8392", "ddl-challenge": "8312", "tsk": "{ bafy2bzacedyvvt4tafhwbwx7xjd3554ay72rtgalkdc63ki2awcq6zryitt3y }", "tsh": "8322", "decl-index": 47, "stage": "check-recoveries", "partitions": "6", "mid": "bafy2bzacedtzdyngfgyrro7w2a2ecztueqfj2bg7tyt3pntl2ku5j5acaka6w-45-8332"}
 ````
 
-
-
-### venus-worker配置文件
+## force-ext-processors配置
 
 #### pc1:
 
@@ -1090,16 +1075,12 @@ declare faults recovered message published:
 - FORCE_SECTOR_SIZE="34359738368"：32GiB
 - FIL_PROOFS_HUGEPAGE_START_INDEX="0" / “10”
 - FIL_PROOFS_CORE_START_INDEX="0" / “24”
-- FIL_PROOFS_USE_MULTICORE_SDR="1"
-- FIL_PROOFS_MULTICORE_SDR_PRODUCERS="1"
-- FORCE_HUGE_PAGE="1"
 
 ```
 [[processors.pc1]]
 bin="/root/wenjie/force-ext-processors"
 args = ["processor", "pc1", "--huge_mem_path_32g", "/mnt/huge", "--huge_mem_page_count_32g", "10"]
 numa_preferred = 0
-# cgroup.cpuset = "0-38"
 envs = { FORCE_SECTOR_SIZE="34359738368", FIL_PROOFS_HUGEPAGE_START_INDEX="0", FIL_PROOFS_CORE_START_INDEX="0", FIL_PROOFS_USE_MULTICORE_SDR="1", FIL_PROOFS_MULTICORE_SDR_PRODUCERS="1", FORCE_HUGE_PAGE="1" }
 concurrent = 5
 
@@ -1107,206 +1088,73 @@ concurrent = 5
 bin="/root/wenjie/force-ext-processors"
 args = ["processor", "pc1", "--huge_mem_path_32g", "/mnt/huge", "--huge_mem_page_count_32g", "10"]
 numa_preferred = 1
-# cgroup.cpuset = "48-86"
 envs = { FORCE_SECTOR_SIZE="34359738368", FIL_PROOFS_HUGEPAGE_START_INDEX="10",FIL_PROOFS_CORE_START_INDEX="24",  FIL_PROOFS_USE_MULTICORE_SDR="1", FIL_PROOFS_MULTICORE_SDR_PRODUCERS="1", FORCE_HUGE_PAGE="1" }
 concurrent = 5
 
 [[processors.pc2]]
 bin="/root/wenjie/force-ext-processors"
-locks = ["gpu"]
-cgroup.cpuset = "16-23"
 concurrent = 1
 envs = { FIL_PROOFS_USE_GPU_COLUMN_BUILDER="1", FIL_PROOFS_USE_GPU_TREE_BUILDER="1", CUDA_VISIBLE_DEVICES="0",BELLMAN_CUSTOM_GPU="NVIDIA GeForce RTX 3080:8704",FIL_PROOFS_MAX_GPU_COLUMN_BATCH_SIZE="4000000",FIL_PROOFS_MAX_GPU_TREE_BATCH_SIZE="4000000" }
 ```
 
-Gpuproxy_worker:
-
-- BELLMAN_LOAD_SHM=1
-- BELLMAN_USE_MAP_BUFFER=1 
-- BELLMAN_CIRCUIT_N=1
-- BELLMAN_PROOF_N=1
 - **CUDA_VISIBLE_DEVICES=1(选择使用哪个gpu，GPU1，2的默认编号为为0，1)**
 - BELLMAN_CUSTOM_GPU：指定GPU型号
 
 ```
 [[processors.c2]]
-# bin="/root/wenjie/force-ext-processors"
-# bin="/root/venus-cluster/dist/bin/cluster_c2_plugin"
-bin="/root/wenjie/cluster_c2_plugin_ty"
-# args = ["processor", "c2", "--sector_size", "32GiB"]
-args = ["run", "--gpuproxy-url", "http://192.168.200.25:18888", "--log-level", "trace"]
-#locks = ["gpu"]
-# cgroup.cpuset = "2,5,8,11,14,17,20,23,26,29,32,35,37,50,53,56,59,62,65,68,71,74,77,80,83,86,43-47,87-95"
-#concurrent = 1
-# envs = { BELLMAN_LOAD_SHM="1", BELLMAN_USE_MAP_BUFFER="1", BELLMAN_CIRCUIT_N="1", BELLMAN_PROOF_N="1", CUDA_VISIBLE_DEVICES="0",BELLMAN_CUSTOM_GPU="NVIDIA GeForce RTX 3080:8704" }
-envs = {"RUST_LOG"="info"}
-weight = 99
-```
-
-
-
-## wdpost
-
-wdpost多机部署：
-
-- 需要1个机器部署**wdpost-master**
-- 需要>=1个机器用于部署**wdpost-slave**
-
-修改ext-prover.cfg配置文件：
-
-```
-vim ~/.venus-sector-manager/ext-prover.cfg
-```
-
-```
-[[WdPost]]
-# Bin配置wdpost-master-daemon插件路径
-Bin = "/root/venus-cluster/dist/bin/wdpost-master"
-
-# Args配置wdpost_master配置文件的路径
-Args = ["daemon", ""-c", "/root/venus-cluster/dist/bin/wdpost-master.toml"]
-
-# WD任务池的任务数设置，建议设置显卡数量的3～4倍
-Concurrent = 50
-
-# 任务权重配置
-Weight = 1
-
-# 超时时间
-ReadyTimeoutSecs = 5
-
-[WdPost.Envs]
-RUST_LOG = "info"
-```
-
-添加wdpost_master配置文件，启动wdpost_master：
-
-```
-vim wdpost-master.toml
-
-
-# rpc 配置
-[server]
-# rpc 的监听地址
-listen = '0.0.0.0:4698'
-# rpc server 最大连接数
-max_connections = 200
-# 数据库配置
-[db]
-# 数据库 url
-url = 'mysql://root:admin123@192.168.200.119:3306/calib_wdpost?ssl-mode=DISABLED'
-# 数据库连接池最小连接数
-min_connections = 3
-# 数据库连接池最大连接数
-max_connections = 20
-# 数据库连接池中连接空闲时长（空闲超过此时间会断开连接）
-idle_timeout = '10m'
-# 任务相关配置
-[task]
-# 任务超时时间
-timeout = '5m'
-# 任务失败重试次数
-max_retry = 2
-# 任务心跳超时时间（超过此时间可能是slave进程挂了）
-heartbeat_timeout = '15s'
-# 任务失败重试间隔时间
-retry_job_interval = '10s'
-# 归档任务扫描的间隔（每隔此配置的时间扫描一次需要归档的任务）
-archive_job_interval = '1h'
-# 应该被归档的任务的时长（超过此时间的任务应该被归档）
-should_archive = '2days'
-
-# 启动
-./wdpost-master daemon -c /root/venus-cluster/dist/bin/wdpost-master.toml
-
-# 运行脚本
-vim wdpost-master.sh
-./wdpost-master daemon -c wdpost-master.toml > wdpost-master.log
-```
-
-添加wdpost_master配置文件，启动wdpost_master：
-
-```
-vim wdpost-slave.toml
-
-[master]
-# master rpc 地址
-server_addr = '192.168.200.158:4698'
-# rpc 断开重连间隔时间
-reconnect_interval = '3s'
-# 任务心跳间隔时间
-heartbeat_interval = '5s'
-[slave]
-# wdpost 任务并发数
+bin="/root/wenjie/force-ext-processors"
+args = ["processor", "c2", "--sector_size", "32GiB"]
 concurrent = 1
-# 拉取任务的间隔时间
-pull_interval = '5s'
-
-
-# 启动
-FORCE_SECTOR_SIZE=34359738368 BELLMAN_LOAD_SHM=1 BELLMAN_GPU_INDEXS=1 CUDA_VISIBLE_DEVICES=1  RUST_LOG=trace nohup ./wdpost-slave daemon-command -c wdpost-slave.toml > wdpost-slave.log 2>&1 &
-
-# 运行脚本
-vim wdpost-slave.sh
-./wdpost-slave daemon-command -c wdpost-slave.toml
-```
-
-## gpuproxy
-
-Gpuproxy:
-
-```
-# 创建/storage-nfs-4/wenjie/fs-gpuproxy-25目录
-mkdir -p /storage-nfs-4/wenjie/fs-gpuproxy-25
-
-
-# 创建数据库
-
-# 运行脚本
-vim gpuproxy.sh
-nohup ./gpuproxy --url 0.0.0.0:18888 --log-level info run --db-dsn="mysql://root:admin123@192.168.200.119:3306/calib_gpuproxy" --disable-worker --fs-resource-path=/storage-nfs-4/wenjie/fs-gpuproxy-25 --resource-type=fs > gpuproxy.log 2>&1 &
-
-./gpuproxy task list
-```
-
-Gpuproxy_worker:
-
-- BELLMAN_LOAD_SHM=1
-- BELLMAN_USE_MAP_BUFFER=1 
-- BELLMAN_CIRCUIT_N=1
-- BELLMAN_PROOF_N=1
-- CUDA_VISIBLE_DEVICES=1(选择使用哪个gpu，枚举为0，1)
-
-```
-touch gpuproxy-worker.db # 创建一个空文件，用于记录 worker-id
-
-# 运行脚本
-vim gpuproxy-worker.sh
-FORCE_SECTOR_SIZE=34359738368 RUST_BACKTRACE=full RUST_LOG=info BELLMAN_LOAD_SHM=1 BELLMAN_USE_MAP_BUFFER=1 BELLMAN_CIRCUIT_N=1 BELLMAN_PROOF_N=1 CUDA_VISIBLE_DEVICES=1 ./gpuproxy_worker run --gpuproxy-url http://127.0.0.1:18888 --max-tasks=1 --allow-type=0  --resource-type=fs --fs-resource-path=/storage-nfs-4/wenjie/fs-gpuproxy-25
-
-
---max-tasks=1 # worker同时并行的任务量
---allow-type=0 # 指定C2
-```
-
-修改venus-worker配置文件：
-
-```
-[processors.limitation.concurrent]
-c2 = 999
-
-[[processors.c2]]
-bin="/root/venus-cluster/dist/bin/cluster_c2_plugin"
-args = ["run", "--gpuproxy-url", "http://192.168.200.25:18888"]
+envs = { BELLMAN_LOAD_SHM="1", BELLMAN_USE_MAP_BUFFER="1", BELLMAN_CIRCUIT_N="1", BELLMAN_PROOF_N="1", CUDA_VISIBLE_DEVICES="0",BELLMAN_CUSTOM_GPU="NVIDIA GeForce RTX 3080:8704" }
 envs = {"RUST_LOG"="info"}
-weight = 99
 ```
 
-## chain-co
+## c2外包
+
+### worker.toml
 
 ```
-/root/chain-co/sophon-co --listen 0.0.0.0:5555 run --auth eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoibnYxNy1jYWxpYiIsInBlcm0iOiJhZG1pbiIsImV4dCI6IiJ9.reRfI1JwbfJs3R5DFPutWjnX8MghBjfgx3Lf5_U3PkA:http://192.168.200.132:7777 --node eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoibnYxNy1jYWxpYiIsInBlcm0iOiJhZG1pbiIsImV4dCI6IiJ9.reRfI1JwbfJs3R5DFPutWjnX8MghBjfgx3Lf5_U3PkA:/ip4/192.168.200.132/tcp/3453 --node eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoibnYxNy1jYWxpYiIsInBlcm0iOiJhZG1pbiIsImV4dCI6IiJ9.reRfI1JwbfJs3R5DFPutWjnX8MghBjfgx3Lf5_U3PkA:/ip4/192.168.200.122/tcp/1234
+[[processors.c2]]
+bin="/cluster_c2_plugin"
+args = ["run", "--gpuproxy-url", "http://192.168.200.18:18888","--log-level", "trace"]
 ```
+
+### 运行gpuproxy
+
+1. Gpuproxy
+
+   ```
+   # 1. 创建fs-resource-path目录
+   mkdir -p /storage-nfs-4/wenjie/fs-gpuproxy-25
+   
+   # 2. 创建mysql数据库calib_gpuproxy
+   
+   # 3. 运行脚本
+   vim gpuproxy.sh
+   nohup ./gpuproxy --url 0.0.0.0:18888 --log-level info run --db-dsn="mysql://root:admin123@192.168.200.119:3306/calib_gpuproxy" --disable-worker --fs-resource-path=/storage-nfs-4/wenjie/fs-gpuproxy-25 --resource-type=fs > gpuproxy.log 2>&1 &
+   
+   # 4. 查看task
+   ./gpuproxy task list
+   ```
+
+2. Gpuproxy_worker
+
+   注意：CUDA_VISIBLE_DEVICES=1(选择使用哪个gpu，枚举为0，1)
+
+   ```
+   # 1. 创建一个空文件，用于记录 worker-id
+   touch gpuproxy-worker.db
+   
+   # 2. 运行脚本
+   vim gpuproxy-worker.sh
+   FORCE_SECTOR_SIZE=34359738368 RUST_BACKTRACE=full RUST_LOG=info BELLMAN_LOAD_SHM=1 BELLMAN_USE_MAP_BUFFER=1 BELLMAN_CIRCUIT_N=1 BELLMAN_PROOF_N=1 CUDA_VISIBLE_DEVICES=1 ./gpuproxy_worker run --gpuproxy-url http://127.0.0.1:18888 --max-tasks=1 --allow-type=0  --resource-type=fs --fs-resource-path=/storage-nfs-4/wenjie/fs-gpuproxy-25
+   
+   
+   --max-tasks=1 # worker同时并行的任务量
+   --allow-type=0 # 指定C2
+   ```
+
+
 
 ## gpuproxy每阶段时间统计
 
